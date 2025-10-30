@@ -10,10 +10,10 @@
   .overlay{position:relative;z-index:2;height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;box-sizing:border-box}
   .panel{max-width:720px;background:rgba(0,0,0,.5);border:1px solid rgba(0,255,0,.06);padding:22px;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
   h1{margin:0;font-size:30px;letter-spacing:1px;color:#d7ffd7}
-  .status{color:inherit} /* тот же цвет, что и у заголовка */
+  .status{color:inherit}
   .big{font-size:52px;font-weight:900;color:#ff1f1f;text-shadow:0 0 22px rgba(255,31,31,.18);display:none;margin-top:10px}
   .type{margin-top:12px;min-height:46px;color:#cfeecc;font-size:18px}
-  .reveal{margin-top:16px;display:none;background:#ff8c1a;color:#1a0a00;padding:12px;border-radius:8px;font-weight:800} /* оранжевая хэллоуинская плашка */
+  .reveal{margin-top:16px;display:none;background:#ff8c1a;color:#1a0a00;padding:12px;border-radius:8px;font-weight:800}
   @media (max-width:520px){.panel{padding:14px}.big{font-size:38px}}
 </style>
 </head>
@@ -21,7 +21,7 @@
 <canvas id="c"></canvas>
 
 <div class="overlay">
-  <div class="panel" role="region" aria-label="Хэллоуинский пранк">
+  <div class="panel">
     <h1>СТАТУС БЕЗОПАСНОСТИ: <span id="status" class="status">ПОВРЕЖДЁН</span></h1>
     <div class="big" id="bigtext">Вас Взломали</div>
     <div class="type" id="typewriter">Подключение к цели…</div>
@@ -48,7 +48,7 @@ addEventListener('resize', ()=>{ w=canvas.width=innerWidth; h=canvas.height=inne
   requestAnimationFrame(matrix);
 })();
 
-/* Быстрое «сканирование»: < 2 сек суммарно */
+/* Быстрое «сканирование»: ≈2 сек суммарно */
 const typeEl = document.getElementById('typewriter');
 const big = document.getElementById('bigtext');
 const reveal = document.getElementById('revealBox');
@@ -62,40 +62,37 @@ const steps = [
 ];
 
 (async function run(){
-  const perStepMs = 250; // 5*250 = ~1250 мс
+  const perStepMs = 350; // 5×350 ≈ 1.75 с + пауза = чуть больше 2 с
   for (let i=0;i<steps.length;i++){
     typeEl.textContent = steps[i];
     await pause(perStepMs);
   }
 
-  // Появляется «Вас Взломали» — и строка статуса сразу исчезает
   typeEl.textContent = '';
   big.style.display = 'block';
 
-  // 3 мигания за 3 секунды
+  // Мигание 3 раза за 3 секунды
   await blinkBig(3000);
 
-  // Через 2 секунды — оранжевая плашка «Это пранк»
-  await pause(2000);
+  // Через 1 сек появляется сообщение «Это пранк»
+  await pause(1000);
   reveal.style.display = 'block';
 })();
 
 function pause(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// Мигание: totalMs делим на on/off фазы для 3 миганий
 async function blinkBig(totalMs){
   const blinks = 3;
-  const perPhase = totalMs / (blinks * 2); // on + off
+  const perPhase = totalMs / (blinks * 2);
   for (let i=0;i<blinks;i++){
-    big.style.opacity = '1';      await pause(perPhase);
-    big.style.opacity = '0.18';   await pause(perPhase);
+    big.style.opacity='1'; await pause(perPhase);
+    big.style.opacity='0.18'; await pause(perPhase);
   }
-  big.style.opacity = '1';
+  big.style.opacity='1';
 }
 
-// ESC — скрыть уведомление (по желанию можно убрать)
 addEventListener('keydown', e=>{
-  if (e.key === 'Escape') reveal.style.display = 'none';
+  if(e.key==='Escape') reveal.style.display='none';
 });
 </script>
 </body>
