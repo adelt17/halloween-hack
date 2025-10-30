@@ -5,19 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Вас взломали — Halloween prank</title>
 <style>
-  :root{
-    --neon:#00ff00;         /* зелёный для статуса и подложки плашки */
-    --red:#ff2d2d;          /* более насыщённый красный */
-  }
   html,body{height:100%;margin:0;background:#000;color:#0f0;font-family:"Courier New",monospace;overflow:hidden}
   canvas{position:fixed;inset:0;z-index:0;display:block}
   .overlay{position:relative;z-index:2;height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;box-sizing:border-box}
   .panel{max-width:720px;background:rgba(0,0,0,.5);border:1px solid rgba(0,255,0,.06);padding:22px;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
-  h1{margin:0;font-size:30px;letter-spacing:1px;color:var(--neon)}  /* цвет как у подложки плашки */
-  .big{font-size:48px;font-weight:800;color:var(--red);text-shadow:0 0 18px rgba(255,45,45,.18);display:none;margin-top:8px}
+  h1{margin:0;font-size:30px;letter-spacing:1px;color:#d7ffd7}
+  .status {color:#ffb02e; text-shadow:0 0 10px rgba(255,176,46,.15);} /* оранжевый статус */
+  .big{font-size:52px;font-weight:900;color:#ff1f1f;text-shadow:0 0 22px rgba(255,31,31,.18);display:none;margin-top:10px}
   .type{margin-top:12px;min-height:46px;color:#cfeecc;font-size:18px}
-  .reveal{margin-top:14px;display:none;background:var(--neon);color:#000;padding:12px;border-radius:8px;font-weight:800}
-  @media (max-width:520px){.panel{padding:14px}.big{font-size:36px}}
+  .reveal{margin-top:16px;display:none;background:#0f0;color:#000;padding:12px;border-radius:8px;font-weight:800}
+  @media (max-width:520px){.panel{padding:14px}.big{font-size:38px}}
 </style>
 </head>
 <body>
@@ -25,76 +22,82 @@
 
 <div class="overlay">
   <div class="panel" role="region" aria-label="Хэллоуинский розыгрыш">
-    <h1>СТАТУС БЕЗОПАСНОСТИ: <span id="status">ПОВРЕЖДЕН</span></h1>
+    <h1>СТАТУС БЕЗОПАСНОСТИ: <span id="status" class="status">ПОВРЕЖДЁН</span></h1>
     <div class="big" id="bigtext">ВАС ВЗЛОМАЛИ</div>
-    <div class="type" id="typewriter">Сканирование данных…</div>
-    <div class="reveal" id="revealBox">🎃 Это хэллоуинский розыгрыш! Данные в безопасности.</div>
+    <div class="type" id="typewriter">Подключение к цели…</div>
+    <div class="reveal" id="revealBox">🎃 Это хэллоуинский пранк! Ваши данные в безопасности.</div>
   </div>
 </div>
 
 <script>
-/* Matrix rain */
+/* Matrix rain (как было) + лёгкое ускорение */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-function size(){ canvas.width=innerWidth; canvas.height=innerHeight; }
-size(); addEventListener('resize', size);
-let cols = Math.floor(canvas.width / 14);
-let y = Array.from({length: cols}, () => Math.random()*10);
+let w = canvas.width = innerWidth, h = canvas.height = innerHeight;
+let cols = Math.floor(w / 14), ypos = Array(cols).fill(0);
+addEventListener('resize', ()=>{ w=canvas.width=innerWidth; h=canvas.height=innerHeight; cols=Math.floor(w/14); ypos=Array(cols).fill(0); });
 (function matrix(){
-  ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fillRect(0,0,w,h);
   ctx.fillStyle='#0f0'; ctx.font='14px monospace';
   for(let i=0;i<cols;i++){
     const ch=String.fromCharCode(33+Math.random()*94), x=i*14;
-    ctx.fillText(ch,x,y[i]*14);
-    if(y[i]*14>canvas.height && Math.random()>0.96) y[i]=0;
-    y[i]+=1.2+Math.random()*1.4; // слегка быстрее
+    ctx.fillText(ch,x,ypos[i]*14);
+    if(ypos[i]*14>h && Math.random()>0.965) ypos[i]=0;
+    ypos[i]+=1+Math.random()*1.7;
   }
   requestAnimationFrame(matrix);
 })();
 
-/* Последовательность: 2–3с сканирования → «Вас взломали» мигает 3 раза за 3с → через 2с плашка */
+/* Быстрый «взлом»: все шаги ≤ 3 сек */
 const typeEl = document.getElementById('typewriter');
 const big = document.getElementById('bigtext');
 const reveal = document.getElementById('revealBox');
 
+const steps = [
+  'Сканирование портов...',
+  'Обход межсетевого экрана...',
+  'Извлечение учётных данных...',
+  'Пересылка данных...',
+  'КОМПРОМИСС ЗАФИКСИРОВАН'
+];
+
 (async function run(){
-  // 1) «Сканирование данных…» ~2–3с
-  await typeScan(2200); // можно поставить 2500 для ровно 2.5с
-
-  // 2) Показ "Вас взломали" и мигание 3 раза за 3 сек
+  // Печать быстро: ~10мс/символ, маленькая задержка между шагами
+  for(const s of steps){ await typeLine(s, 120); }
+  await pause(200);
   big.style.display='block';
-  await flashBigExact(3000, 3); // общая длительность 3с, ровно 3 мигания
-
-  // 3) Пауза 2 сек и показываем плашку-пояснение
-  await pause(2000);
+  await blinkBig(3000);       // 3 мигания за 3 сек
+  await pause(1000);          // пауза 1 сек
   reveal.style.display='block';
 })();
 
-function typeScan(totalMs){
-  // Быстрая «печать» строки в течение totalMs
-  const text = 'Сканирование данных…';
-  typeEl.textContent = '';
-  const perChar = Math.max(20, Math.floor(totalMs / text.length) - 10); // скорость печати
+function typeLine(text, gapAfter){
   return new Promise(res=>{
-    let i=0;
-    const t=setInterval(()=>{
-      typeEl.textContent += text.charAt(i++);
-      if(i>=text.length){ clearInterval(t); setTimeout(res, Math.max(0, totalMs - i*perChar)); }
-    }, perChar);
+    typeEl.textContent=''; let i=0;
+    const iv = setInterval(()=>{
+      typeEl.textContent += text.charAt(i++); 
+      if(i>text.length){ clearInterval(iv); setTimeout(res, gapAfter); }
+    }, 10); // скорость печати
   });
 }
 
-function pause(ms){ return new Promise(r=>setTimeout(r, ms)); }
+function pause(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-async function flashBigExact(totalMs, flashes){
-  // делаем flashes "миганий" равномерно за totalMs
-  const interval = totalMs / (flashes*2); // on/off шаг
-  for(let i=0;i<flashes*2;i++){
-    big.style.opacity = (i%2===0)? '0.15' : '1';
-    await pause(interval);
+// 3 чётких мигания за 3 секунды
+async function blinkBig(totalMs){
+  const blinks = 3;
+  const perBlink = totalMs / (blinks*2); // on/off равные доли
+  for(let i=0;i<blinks;i++){
+    big.style.opacity = '1';   await pause(perBlink);
+    big.style.opacity = '0.18';await pause(perBlink);
   }
   big.style.opacity = '1';
 }
+
+// ESC скрывает уведомление (по желанию можно убрать)
+addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ reveal.style.display='none'; }
+});
 </script>
 </body>
 </html>
